@@ -1,0 +1,96 @@
+name: Build REPLAY Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "REPLAY_GitHub_Starter.zip"
+      - ".github/workflows/build-android.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify starter archive
+        run: |
+          test -f REPLAY_GitHub_Starter.zip || {
+            echo "::error::REPLAY_GitHub_Starter.zip was not found in the repository root."
+            exit 1
+          }
+          unzip -t REPLAY_GitHub_Starter.zip
+
+      - name: Extract project
+        run: |
+          mkdir -p extracted
+          unzip -q REPLAY_GitHub_Starter.zip -d extracted
+          PUBSPEC="$(find extracted -type f -name pubspec.yaml -print -quit)"
+          if [ -z "$PUBSPEC" ]; then
+            echo "::error::No pubspec.yaml was found inside the ZIP."
+            find extracted -maxdepth 4 -type f -print
+            exit 1
+          fi
+          echo "PROJECT_DIR=$(dirname "$PUBSPEC")" >> "$GITHUB_ENV"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform files
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+          flutter create --platforms=android --org com.replay --project-name app .
+          mkdir -p android/app/src/main/kotlin/com/replay/app
+
+          # Restore the app's custom manifest and Kotlin capture sources
+          # after Flutter generates the standard Android project structure.
+          SOURCE_MANIFEST="$(find android -maxdepth 3 -type f -name AndroidManifest.xml ! -path 'android/app/src/main/AndroidManifest.xml' -print -quit)"
+          if [ -n "$SOURCE_MANIFEST" ]; then
+            cp "$SOURCE_MANIFEST" android/app/src/main/AndroidManifest.xml
+          fi
+
+          while IFS= read -r source; do
+            case "$source" in
+              android/app/src/main/kotlin/*) ;;
+              *) cp "$source" android/app/src/main/kotlin/com/replay/app/ ;;
+            esac
+          done < <(find android -type f -name '*.kt' ! -path 'android/app/src/main/kotlin/*')
+
+      - name: Get Flutter dependencies
+        run: |
+          cd "$PROJECT_DIR"
+          flutter pub get
+
+      - name: Analyze Dart code
+        run: |
+          cd "$PROJECT_DIR"
+          flutter analyze
+
+      - name: Build release APK
+        run: |
+          cd "$PROJECT_DIR"
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-android-apk
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
