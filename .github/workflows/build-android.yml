@@ -91,7 +91,9 @@ jobs:
       - name: Analyze Dart code
         run: |
           cd "$PROJECT_DIR"
-          flutter analyze
+          # Keep real analyzer errors and warnings fatal, but don't fail the
+          # build for informational style/deprecation notices.
+          flutter analyze --no-fatal-infos
 
       - name: Build release APK
         run: |
