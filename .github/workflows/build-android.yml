@@ -58,8 +58,7 @@ jobs:
           flutter create --platforms=android --org com.replay --project-name app .
           mkdir -p android/app/src/main/kotlin/com/replay/app
 
-          # Restore the app's custom manifest and Kotlin capture sources
-          # after Flutter generates the standard Android project structure.
+          # Restore the app's custom manifest and Kotlin capture sources.
           SOURCE_MANIFEST="$(find android -maxdepth 3 -type f -name AndroidManifest.xml ! -path 'android/app/src/main/AndroidManifest.xml' -print -quit)"
           if [ -n "$SOURCE_MANIFEST" ]; then
             cp "$SOURCE_MANIFEST" android/app/src/main/AndroidManifest.xml
@@ -76,6 +75,17 @@ jobs:
         run: |
           cd "$PROJECT_DIR"
           flutter pub get
+
+      - name: Apply Flutter compatibility fixes
+        run: |
+          cd "$PROJECT_DIR"
+          # Flutter's current ThemeData expects CardThemeData, not CardTheme.
+          if [ -f lib/main.dart ]; then
+            sed -i 's/CardTheme(/CardThemeData(/g' lib/main.dart
+          fi
+          # flutter create generates a placeholder test that assumes the
+          # generated package name; this starter's package name is different.
+          rm -f test/widget_test.dart
 
       - name: Analyze Dart code
         run: |
