@@ -20,3 +20,6 @@ The workflow checks and extracts `REPLAY_GitHub_Starter.zip`, generates the stan
 - In-app video playback, thumbnails, export/share, quality controls, automatic storage cleanup, and recording segmentation still need implementation and device testing.
 
 See [BUILD_NOTES.md](BUILD_NOTES.md) for the current development checklist.
+
+
+Android build workflow: `.github/workflows/build-android.yml`.
