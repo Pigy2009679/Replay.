@@ -151,6 +151,8 @@ jobs:
       - name: Inspect extracted capture sources
         run: |
           cd "$PROJECT_DIR"
+          echo "===== lib/main.dart ====="
+          sed -n '1,1200p' lib/main.dart
           echo "===== lib/services/screen_capture.dart ====="
           sed -n '1,260p' lib/services/screen_capture.dart
           echo "===== android/MainActivity.kt sources ====="
