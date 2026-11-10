@@ -72,6 +72,16 @@ jobs:
             esac
           done < <(find android -type f -name '*.kt' ! -path 'android/app/src/main/kotlin/*')
 
+      - name: Inspect extracted capture sources
+        run: |
+          cd "$PROJECT_DIR"
+          echo "===== lib/services/screen_capture.dart ====="
+          sed -n '1,260p' lib/services/screen_capture.dart
+          echo "===== android/MainActivity.kt sources ====="
+          find android -type f -name '*.kt' -not -path 'android/app/src/main/kotlin/*' -print -exec sed -n '1,260p' {} \;
+          echo "===== android/ReplayCaptureService.kt ====="
+          find android -type f -name 'ReplayCaptureService.kt' -print -exec sed -n '1,320p' {} \;
+
       - name: Get Flutter dependencies
         run: |
           cd "$PROJECT_DIR"
