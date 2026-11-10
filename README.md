@@ -1,25 +1,50 @@
 # REPLAY
 
-REPLAY is a user-controlled screen recording prototype. The Android build is generated from the starter project archive stored in this repository.
+A Flutter starter project for a transparent, user-controlled Android screen recorder and local video library.
 
-## Build the Android APK
+## Current implementation
 
-1. Open the **Actions** tab.
-2. Select **Build REPLAY Android APK**.
-3. Select **Run workflow** on the `main` branch.
-4. When the run completes, open it and download the `replay-android-apk` artifact.
+- Flutter interface: Home, Library, History, Settings, and recording details.
+- Android screen capture through the system MediaProjection consent prompt.
+- Foreground recording service with a persistent system notification and Stop action.
+- MP4 recordings saved in app-private Movies storage (with an internal-storage fallback).
+- Pause, resume, stop, and local recording discovery.
+- In-app video playback for saved MP4 recordings.
+- Local storage-preference selection.
 
-The workflow checks and extracts `REPLAY_GitHub_Starter.zip`, generates the standard Flutter Android project files, restores the Android native source files, runs Flutter dependency and analysis checks, and builds a release APK.
+## Important platform notes
 
-## Current limitations
+- Android recording requires approval in the Android system screen-capture prompt for each session.
+- The foreground-service notification and Android's system recording indicator remain visible.
+- Android may block protected content. REPLAY does not bypass protected-content restrictions.
+- Recordings are not silently restarted after reboot, permission loss, or process death.
+- Automatic storage cleanup and storage-limit monitoring are preference-only placeholders in this build; they do not yet delete files or stop recordings automatically.
+- The iOS screen-recording engine is not implemented. The Android capture service is the only supported capture implementation in this starter.
+- Test recording and playback on real devices across supported Android versions before wider distribution.
 
-- This is an early development prototype, not a finished or store-ready app.
-- Android screen capture requires the Android system's screen-capture consent and a visible foreground-service notification.
-- Android protected content may be blocked. The app does not bypass those restrictions or hide recording indicators.
-- iOS screen recording is not implemented in this starter.
-- In-app video playback, thumbnails, export/share, quality controls, automatic storage cleanup, and recording segmentation still need implementation and device testing.
+## Build with GitHub Actions
 
-See [BUILD_NOTES.md](BUILD_NOTES.md) for the current development checklist.
+1. Extract the contents of this ZIP directly into the repository root (so `pubspec.yaml` and `.github/` are at the root).
+2. Open **Actions** and run **Build REPLAY Android APK** (or push to `main`).
+3. Download the `replay-android-apk` artifact from the completed workflow.
 
+The workflow generates the standard Android project files, overlays the REPLAY native capture implementation, runs Flutter analysis, and builds a release APK.
 
-Android build workflow: `.github/workflows/build-android.yml`.
+## Local build
+
+Install Flutter, then run:
+
+```bash
+flutter create --platforms=android --org com.replay --project-name app .
+flutter pub get
+flutter analyze
+flutter build apk --release
+```
+
+## Project layout
+
+```text
+lib/                    Flutter UI and platform-channel client
+android/                Android manifest and Kotlin source overlay
+.github/workflows/      APK build workflow
+```

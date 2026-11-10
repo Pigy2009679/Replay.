@@ -1,0 +1,62 @@
+name: Build REPLAY Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform scaffolding
+        run: flutter create --platforms=android --org com.replay --project-name app .
+
+      - name: Overlay REPLAY Android implementation
+        run: |
+          cp android/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          mkdir -p android/app/src/main/kotlin/com/replay/app
+          cp android/MainActivity.kt android/app/src/main/kotlin/com/replay/app/MainActivity.kt
+          cp android/ReplayCaptureService.kt android/app/src/main/kotlin/com/replay/app/ReplayCaptureService.kt
+
+      - name: Resolve Flutter packages
+        run: flutter pub get
+
+      - name: Apply Flutter compatibility fixes
+        run: |
+          # Flutter's current Material API uses CardThemeData.
+          sed -i 's/CardTheme(/CardThemeData(/g' lib/main.dart
+          rm -f test/widget_test.dart
+
+      - name: Analyze Dart code
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
